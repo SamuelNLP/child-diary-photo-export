@@ -2,8 +2,6 @@
 
 SHELL = /bin/bash
 PACKAGE_VERSION:=$(shell git describe --tags --abbrev=0)
-DOCKER_REGISTRY=europe-docker.pkg.dev/$(PROJECT_ID)/$(ARTIFACT_REGISTRY)
-IMAGE_NAME=ai-<name-placeholder>-server
 
 clean_dist:
 	rm -rf dist *.egg-info
@@ -24,7 +22,7 @@ test:
 	poetry run pytest -v -p no:cacheprovider tests
 
 test_w_coverage:
-	poetry run pytest -v --junitxml=unit_test_report.xml --cov-report html --cov=<name-placeholder-underscore> tests/
+	poetry run pytest -v --junitxml=unit_test_report.xml --cov-report html --cov=photo_export tests/
 
 package: clean_dist
 	poetry build

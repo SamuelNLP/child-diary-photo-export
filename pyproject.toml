@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "<name-placeholder-underscore>-server"
+name = "photo_export"
 version = "0.0.0"
-description = "<description-placeholder>"
+description = "Tool to export photos from the child diary app."
 authors = ["Samuel Pedro"]
 readme = "README.md"
 license = "LICENSE"
