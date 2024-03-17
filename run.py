@@ -1,45 +1,50 @@
 import json
+import uuid
 
 import requests
 from datetime import datetime
 import urllib.request
+from functools import partial
+import concurrent.futures
 
 
-with open("data/cookies.json") as cookies_json:
-    cookies = json.load(cookies_json)
+def get_image(element, page):
+    date = datetime.strptime(element["CreatedOn"], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+    extension = element["Extension"]
 
-with open("data/headers.json") as headers_json:
-    headers = json.load(headers_json)
+    try:
+        urllib.request.urlretrieve(
+            element["Url"], f"media/{date}_{str(uuid.uuid4())[:6]}{extension}"
+        )
+        print(f"{page=}, {str(date)=}")
 
-counter = 0
-page = 0
+    except:  # noqa
+        print(element["Url"])
 
-while page < 5:
-    response = requests.get(
-        "https://app.childdiary.net/api/media",
-        params={"page": str(page)},
-        cookies=cookies,
-        headers=headers,
-    )
 
-    if response.status_code != 200 or response.text == "[]":
-        break
+if __name__ == "__main__":
+    with open("data/cookies.json") as cookies_json:
+        cookies = json.load(cookies_json)
 
-    a = response.json()
+    with open("data/headers.json") as headers_json:
+        headers = json.load(headers_json)
 
-    for media in response.json():
-        date = datetime.strptime(media["CreatedOn"], "%Y-%m-%dT%H:%M:%S.%fZ").date()
+    page = 0
 
-        if media["Type"] == "image/jpeg":
-            image_data = requests.get(media["Url"]).content
-            with open(f"photos/{counter}_{date}.jpg", "wb") as image_handler:
-                image_handler.write(image_data)
-        elif media["Type"] == "video/mp4":
-            urllib.request.urlretrieve(media["Url"], f"videos/{counter}_{date}.mp4")
-        else:
-            print(media["Type"])
+    while True:
+        response = requests.get(
+            "https://app.childdiary.net/api/media",
+            params={"page": str(page)},
+            cookies=cookies,
+            headers=headers,
+        )
 
-        counter += 1
-        print(f"{page=}, {counter=}, {str(date)=}")
+        if response.status_code != 200 or response.text == "[]":
+            break
 
-    page += 1
+        response_json = response.json()
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            executor.map(partial(get_image, page=page), response_json)
+
+        page += 1
