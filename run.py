@@ -40,6 +40,6 @@ while page < 5:
             print(media["Type"])
 
         counter += 1
-        print(f"{page=}, {counter=}, {date=}")
+        print(f"{page=}, {counter=}, {str(date)=}")
 
     page += 1
