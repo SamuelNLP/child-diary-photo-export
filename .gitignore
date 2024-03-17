@@ -274,3 +274,4 @@ pip-selfcheck.json
 
 # End of https://www.gitignore.io/api/test,python,pycharm+all,jupyternotebook
 /test_report.xml
+/data/*
