@@ -7,96 +7,18 @@ readme = "README.md"
 license = "LICENSE"
 
 [tool.poetry.dependencies]
-python = "3.10.*"
-flask = "^3.0.2"
-prerequisites = "^1.0.3"
-python-dotenv = "^1.0.1"
-numpy = "^1.26.4"
-mysqlclient = "^2.2.4"
-schema = "^0.7.5"
-requests = "^2.31.0"
+python = ">=3.13,<3.14"
+requests = "^2.32.5"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.1.15"
-mypy = "^1.8.0"
-pre-commit = "^3.6.2"
-pytest = "^7.4.4"
-pytest-xdist = "^3.5.0"
-pytest-cov = "^4.1.0"
-types-mysqlclient = "^2.2.0.1"
-types-requests = "^2.31.0.20240218"
+ruff = "*"
+mypy = "*"
+pre-commit = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-dotenv = "*"
+types-requests = "*"
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "pep440"
-pattern = '(?P<base>\d+\.\d+\.\d+)'
-
-[tool.ruff]
-# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-select = ["E", "F"]
-ignore = []
-
-# Allow autofix for all enabled rules (when `--fix`) is provided.
-fixable = ["A", "B", "C", "D", "E", "F", "I"]
-unfixable = []
-
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-
-# Same as Black.
-line-length = 88
-
-# Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-# Assume Python 3.10.
-target-version = "py310"
-
-[tool.ruff.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 10
-
-[tool.ruff.lint.isort]
-case-sensitive = true
-force-wrap-aliases = true
-combine-as-imports = true
-section-order = [
-    "future",
-    "standard-library",
-    "third-party",
-    "first-party",
-    "local-folder",
-]
-
-[tool.coverage.report]
-exclude_also = [
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "@(abc\\.)?abstractmethod",
-]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

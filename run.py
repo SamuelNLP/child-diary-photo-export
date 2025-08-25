@@ -23,9 +23,6 @@ def get_image(element, page):
 
 
 if __name__ == "__main__":
-    with open("data/cookies.json") as cookies_json:
-        cookies = json.load(cookies_json)
-
     with open("data/headers.json") as headers_json:
         headers = json.load(headers_json)
 
@@ -35,7 +32,6 @@ if __name__ == "__main__":
         response = requests.get(
             "https://app.childdiary.net/api/media",
             params={"page": str(page)},
-            cookies=cookies,
             headers=headers,
         )
 
