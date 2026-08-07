@@ -2,7 +2,7 @@
 
 Export media from ChildDiary to local files.
 
-The script logs in with your account credentials from `.env`, fetches paginated media from the ChildDiary API, and downloads files into `media/` with retry support.
+The script logs in with your account credentials (from `.env` or system keyring), fetches paginated media from the ChildDiary API, and downloads files into `media/` with retry support.
 
 ## Requirements
 
@@ -30,6 +30,17 @@ CHILD_DIARY_USERNAME=you@example.com
 CHILD_DIARY_PASSWORD=your-password
 ```
 
+Alternatively, store credentials in your system keyring (more secure):
+
+```bash
+# On first run, the script will prompt for credentials and save them to keyring
+uv run python script.py
+
+# Or manually set them:
+keyring set app.childdiary.net your@email.com
+# (you'll be prompted for the password)
+```
+
 4. Run the exporter:
 
 ```bash
@@ -49,6 +60,12 @@ Downloaded files will be written to `media/`.
 
 - `CHILD_DIARY_USERNAME`: ChildDiary login email/username
 - `CHILD_DIARY_PASSWORD`: ChildDiary account password
+
+## Keyring
+
+Credentials can also be stored in your system keyring under the service name `app.childdiary.net`.
+
+Priority: environment variables take precedence over keyring. If neither is available, the script will prompt for credentials and store them in the keyring.
 
 ## Development
 

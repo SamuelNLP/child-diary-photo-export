@@ -10,7 +10,7 @@ from functools import partial
 from typing import Any
 
 import requests
-from dotenv import load_dotenv
+from auth import get_credentials
 from tenacity import retry
 from tenacity import stop_after_attempt
 from tenacity import wait_exponential
@@ -69,15 +69,14 @@ def get_image(media_item: dict[str, Any], page_number: int) -> None:
 
 
 def create_authenticated_session() -> requests.Session:
-    """Create an authenticated ChildDiary session using credentials from env vars.
+    """Create an authenticated ChildDiary session using credentials from env vars or keyring.
 
     Returns
     -------
     requests.Session
         Authenticated HTTP session with login cookies set.
     """
-    username = os.getenv("CHILD_DIARY_USERNAME")
-    password = os.getenv("CHILD_DIARY_PASSWORD")
+    username, password = get_credentials()
 
     session = requests.Session()
     session.headers.update(
@@ -117,8 +116,6 @@ def main() -> None:
     -------
     None
     """
-    load_dotenv()
-
     os.makedirs("media", exist_ok=True)
 
     session = create_authenticated_session()
