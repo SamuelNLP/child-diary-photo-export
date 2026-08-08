@@ -234,11 +234,22 @@ def main() -> None:
         metavar="DIR",
         help="Output directory for media files (default: media)",
     )
+    parser.add_argument(
+        "-p",
+        "--start-page",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Start downloading from page N (default: 1)",
+    )
     args = parser.parse_args()
+
+    if args.start_page < 1:
+        parser.error("--start-page must be >= 1")
 
     os.makedirs(args.output_dir, exist_ok=True)
     session = create_authenticated_session()
-    current_page = 1
+    current_page = args.start_page
 
     while True:
         if not check_disk_usage(args.output_dir):
