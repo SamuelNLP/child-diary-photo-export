@@ -3,6 +3,7 @@
 import argparse
 import concurrent.futures
 import os
+import shutil
 import tarfile
 import time
 import urllib.request
@@ -78,6 +79,31 @@ def get_image(
         )
         print(download_error)
         return None
+
+
+def check_disk_usage(directory: str, threshold: float = 90.0) -> bool:
+    """Check disk usage and prompt if above threshold.
+
+    Parameters
+    ----------
+    directory : str
+        Directory to check disk usage for.
+    threshold : float
+        Percentage threshold (default: 90.0).
+
+    Returns
+    -------
+    bool
+        True to continue, False to stop.
+    """
+    usage = shutil.disk_usage(directory)
+    percent_used = (usage.used / usage.total) * 100
+
+    if percent_used >= threshold:
+        print(f"WARNING: Disk usage at {percent_used:.1f}% (>= {threshold}%)")
+        response = input("Disk space running low. Continue? [y/N]: ").strip().lower()
+        return response in ("y", "yes")
+    return True
 
 
 def compress_files(file_list: list[str], page_number: int, compress_type: str) -> None:
@@ -192,6 +218,10 @@ def main() -> None:
     current_page = 1
 
     while True:
+        if not check_disk_usage(args.output_dir):
+            print("Stopped due to low disk space.")
+            break
+
         page_start_time = time.time()
 
         media_response = session.get(
