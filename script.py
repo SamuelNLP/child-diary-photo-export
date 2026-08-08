@@ -43,6 +43,31 @@ def download_image(image_url: str, destination: str) -> None:
     urllib.request.urlretrieve(image_url, destination)
 
 
+def parse_media_date(date_str: str) -> datetime.date:
+    """Parse date string handling both with and without microseconds.
+
+    Parameters
+    ----------
+    date_str : str
+        Date string from API, e.g. '2025-12-15T17:32:45Z' or '2025-12-15T17:32:45.123456Z'.
+
+    Returns
+    -------
+    datetime.date
+        Parsed date.
+    """
+    formats = [
+        "%Y-%m-%dT%H:%M:%S.%fZ",  # With microseconds
+        "%Y-%m-%dT%H:%M:%SZ",  # Without microseconds
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f"Unable to parse date: {date_str}")
+
+
 def get_image(
     media_item: dict[str, Any], page_number: int, output_dir: str
 ) -> str | None:
@@ -62,9 +87,7 @@ def get_image(
     str | None
         Path to the downloaded file on success, None on failure.
     """
-    created_date = datetime.strptime(
-        media_item["CreatedOn"], "%Y-%m-%dT%H:%M:%S.%fZ"
-    ).date()
+    created_date = parse_media_date(media_item["CreatedOn"])
     file_extension = media_item["Extension"]
     file_name = f"{created_date}_{str(uuid.uuid4())[:6]}{file_extension}"
     destination = str(Path(output_dir) / file_name)
