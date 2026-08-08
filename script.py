@@ -1,12 +1,16 @@
 """Export media files from ChildDiary using authenticated API requests."""
 
+import argparse
 import concurrent.futures
 import os
+import tarfile
 import time
 import urllib.request
 import uuid
+import zipfile
 from datetime import datetime
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -38,8 +42,10 @@ def download_image(image_url: str, destination: str) -> None:
     urllib.request.urlretrieve(image_url, destination)
 
 
-def get_image(media_item: dict[str, Any], page_number: int) -> None:
-    """Download a media item and log success/failure information.
+def get_image(
+    media_item: dict[str, Any], page_number: int, output_dir: str
+) -> str | None:
+    """Download a media item and return the file path on success.
 
     Parameters
     ----------
@@ -47,25 +53,71 @@ def get_image(media_item: dict[str, Any], page_number: int) -> None:
         Item payload returned by ``/api/media``.
     page_number : int
         Source page number where this item was listed.
+    output_dir : str
+        Directory to save the downloaded file.
 
     Returns
     -------
-    None
+    str | None
+        Path to the downloaded file on success, None on failure.
     """
     created_date = datetime.strptime(
         media_item["CreatedOn"], "%Y-%m-%dT%H:%M:%S.%fZ"
     ).date()
     file_extension = media_item["Extension"]
     file_name = f"{created_date}_{str(uuid.uuid4())[:6]}{file_extension}"
+    destination = str(Path(output_dir) / file_name)
 
     try:
-        download_image(media_item["Url"], f"media/{file_name}")
+        download_image(media_item["Url"], destination)
         print(f"page_number={page_number}, file_name={file_name}")
+        return destination
     except Exception as download_error:  # noqa: BLE001
         print(
             f"Failed to download image for page_number={page_number}: {media_item['Url']}"
         )
         print(download_error)
+        return None
+
+
+def compress_files(file_list: list[str], page_number: int, compress_type: str) -> None:
+    """Compress files into an archive and remove originals.
+
+    Parameters
+    ----------
+    file_list : list[str]
+        List of file paths to compress.
+    page_number : int
+        Page number for naming the archive.
+    compress_type : str
+        Compression type: zip, gzip, or bz2.
+    """
+    if not file_list:
+        return
+
+    output_dir = Path(file_list[0]).parent
+    archive_name = f"page_{page_number}"
+
+    if compress_type == "zip":
+        archive_path = output_dir / f"{archive_name}.zip"
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for f in file_list:
+                zf.write(f, arcname=Path(f).name)
+    elif compress_type == "gzip":
+        archive_path = output_dir / f"{archive_name}.tar.gz"
+        with tarfile.open(archive_path, "w:gz") as tf:
+            for f in file_list:
+                tf.add(f, arcname=Path(f).name)
+    elif compress_type == "bz2":
+        archive_path = output_dir / f"{archive_name}.tar.bz2"
+        with tarfile.open(archive_path, "w:bz2") as tf:
+            for f in file_list:
+                tf.add(f, arcname=Path(f).name)
+
+    # Remove original files
+    for f in file_list:
+        os.remove(f)
+        print(f"Compressed {Path(f).name} into {archive_path.name}")
 
 
 def create_authenticated_session() -> requests.Session:
@@ -116,10 +168,27 @@ def main() -> None:
     -------
     None
     """
-    os.makedirs("media", exist_ok=True)
+    parser = argparse.ArgumentParser(
+        description="Export media from ChildDiary to local files."
+    )
+    parser.add_argument(
+        "-c",
+        "--compress",
+        choices=["zip", "gzip", "bz2"],
+        metavar="TYPE",
+        help="Compress each page's files after download (zip, gzip, bz2)",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        default="media",
+        metavar="DIR",
+        help="Output directory for media files (default: media)",
+    )
+    args = parser.parse_args()
 
+    os.makedirs(args.output_dir, exist_ok=True)
     session = create_authenticated_session()
-
     current_page = 1
 
     while True:
@@ -137,7 +206,19 @@ def main() -> None:
         page_media_items = media_response.json()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            executor.map(partial(get_image, page_number=current_page), page_media_items)
+            results = list(
+                executor.map(
+                    partial(
+                        get_image, page_number=current_page, output_dir=args.output_dir
+                    ),
+                    page_media_items,
+                )
+            )
+
+        downloaded_files = [r for r in results if r is not None]
+
+        if args.compress:
+            compress_files(downloaded_files, current_page, args.compress)
 
         page_elapsed_seconds = time.time() - page_start_time
         print(f"Page {current_page} took {page_elapsed_seconds} seconds")
