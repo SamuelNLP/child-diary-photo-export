@@ -129,7 +129,9 @@ def check_disk_usage(directory: str, threshold: float = 90.0) -> bool:
     return True
 
 
-def compress_files(file_list: list[str], archive_name: str, compress_type: str = "zip") -> None:
+def compress_files(
+    file_list: list[str], archive_name: str, compress_type: str = "zip"
+) -> None:
     """Compress files into an archive and remove originals.
 
     Parameters
@@ -161,6 +163,9 @@ def compress_files(file_list: list[str], archive_name: str, compress_type: str =
         with tarfile.open(archive_path, "w:bz2") as tf:
             for f in file_list:
                 tf.add(f, arcname=Path(f).name)
+    else:
+        print(f"Unknown/unsupported compression format {compress_type!r}. Skipping")
+        return
 
     # Remove original files
     for f in file_list:
