@@ -2,6 +2,7 @@
 
 import argparse
 import concurrent.futures
+import json
 import os
 import shutil
 import tarfile
@@ -9,16 +10,16 @@ import time
 import urllib.request
 import uuid
 import zipfile
-from datetime import datetime
+from collections.abc import Callable
+from datetime import UTC, date, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
 
 import requests
-from auth import get_credentials
-from tenacity import retry
-from tenacity import stop_after_attempt
-from tenacity import wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from .auth import get_credentials
 
 
 @retry(
@@ -43,7 +44,7 @@ def download_image(image_url: str, destination: str) -> None:
     urllib.request.urlretrieve(image_url, destination)
 
 
-def parse_media_date(date_str: str) -> datetime.date:
+def parse_media_date(date_str: str) -> date:
     """Parse date string handling both with and without microseconds.
 
     Parameters
@@ -53,7 +54,7 @@ def parse_media_date(date_str: str) -> datetime.date:
 
     Returns
     -------
-    datetime.date
+    date
         Parsed date.
     """
     formats = [
@@ -62,7 +63,8 @@ def parse_media_date(date_str: str) -> datetime.date:
     ]
     for fmt in formats:
         try:
-            return datetime.strptime(date_str, fmt).date()
+            dt = datetime.strptime(date_str, fmt).replace(tzinfo=UTC)
+            return dt.date()
         except ValueError:
             continue
     raise ValueError(f"Unable to parse date: {date_str}")
@@ -104,8 +106,13 @@ def get_image(
         return None
 
 
-def check_disk_usage(directory: str, threshold: float = 90.0) -> bool:
-    """Check disk usage and prompt if above threshold.
+def check_disk_usage(
+    directory: str,
+    threshold: float = 90.0,
+    on_warn: Callable[[str], None] | None = None,
+    on_prompt: Callable[[str], bool] | None = None,
+) -> bool:
+    """Check disk usage and optionally prompt if above threshold.
 
     Parameters
     ----------
@@ -113,6 +120,10 @@ def check_disk_usage(directory: str, threshold: float = 90.0) -> bool:
         Directory to check disk usage for.
     threshold : float
         Percentage threshold (default: 90.0).
+    on_warn : Callable[[str], None], optional
+        Callback for warning messages.
+    on_prompt : Callable[[str], bool], optional
+        Callback for user prompts. Returns True to continue.
 
     Returns
     -------
@@ -123,9 +134,19 @@ def check_disk_usage(directory: str, threshold: float = 90.0) -> bool:
     percent_used = (usage.used / usage.total) * 100
 
     if percent_used >= threshold:
-        print(f"WARNING: Disk usage at {percent_used:.1f}% (>= {threshold}%)")
-        response = input("Disk space running low. Continue? [y/N]: ").strip().lower()
-        return response in ("y", "yes")
+        msg = f"WARNING: Disk usage at {percent_used:.1f}% (>= {threshold}%)"
+        if on_warn:
+            on_warn(msg)
+        else:
+            print(msg)
+
+        if on_prompt:
+            return on_prompt("Disk space running low. Continue? [y/N]: ")
+        else:
+            response = (
+                input("Disk space running low. Continue? [y/N]: ").strip().lower()
+            )
+            return response in ("y", "yes")
     return True
 
 
@@ -214,6 +235,101 @@ def create_authenticated_session() -> requests.Session:
     return session
 
 
+def export(
+    output_dir: str,
+    compress: str | None = None,
+    start_page: int = 1,
+    on_progress: Callable[[str], None] | None = None,
+    on_prompt: Callable[[str], bool] | None = None,
+    session: requests.Session | None = None,
+) -> bool:
+    """Export media from ChildDiary to local files.
+
+    Parameters
+    ----------
+    output_dir : str
+        Output directory for media files.
+    compress : str, optional
+        Compression type: zip, gzip, or bz2.
+    start_page : int, optional
+        Start downloading from page N (default: 1).
+    on_progress : Callable[[str], None], optional
+        Callback for progress messages.
+    on_prompt : Callable[[str], bool], optional
+        Callback for user prompts. Returns True to continue.
+    session : requests.Session, optional
+        Pre-authenticated session. If not provided, one will be created.
+
+    Returns
+    -------
+    bool
+        True if export completed successfully, False otherwise.
+    """
+
+    def progress(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        else:
+            print(msg)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Use provided session or create a new one
+    if session is None:
+        session = create_authenticated_session()
+
+    current_page = start_page
+
+    try:
+        while True:
+            if not check_disk_usage(
+                output_dir,
+                on_warn=progress,
+                on_prompt=on_prompt,
+            ):
+                progress("Stopped due to low disk space.")
+                return False
+
+            page_start_time = time.time()
+
+            media_response = session.get(
+                "https://app.childdiary.net/api/media",
+                params={"page": str(current_page)},
+                timeout=30,
+            )
+
+            if media_response.status_code != 200 or media_response.text == "[]":
+                break
+
+            page_media_items = media_response.json()
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                results = list(
+                    executor.map(
+                        partial(
+                            get_image, page_number=current_page, output_dir=output_dir
+                        ),
+                        page_media_items,
+                    )
+                )
+
+            downloaded_files = [r for r in results if r is not None]
+
+            if compress:
+                compress_files(downloaded_files, f"page_{current_page}", compress)
+
+            page_elapsed_seconds = time.time() - page_start_time
+            progress(f"Page {current_page} took {page_elapsed_seconds} seconds")
+
+            current_page += 1
+
+        return True
+
+    except (requests.exceptions.RequestException, json.JSONDecodeError, OSError) as e:
+        progress(f"Export failed: {e}")
+        return False
+
+
 def main() -> None:
     """Fetch paginated media metadata and download each image in parallel.
 
@@ -251,47 +367,18 @@ def main() -> None:
     if args.start_page < 1:
         parser.error("--start-page must be >= 1")
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    session = create_authenticated_session()
-    current_page = args.start_page
+    success = export(
+        output_dir=args.output_dir,
+        compress=args.compress,
+        start_page=args.start_page,
+        on_progress=print,
+        on_prompt=lambda msg: input(msg).strip().lower() in ("y", "yes"),
+    )
 
-    while True:
-        if not check_disk_usage(args.output_dir):
-            print("Stopped due to low disk space.")
-            break
+    if not success:
+        import sys
 
-        page_start_time = time.time()
-
-        media_response = session.get(
-            "https://app.childdiary.net/api/media",
-            params={"page": str(current_page)},
-            timeout=30,
-        )
-
-        if media_response.status_code != 200 or media_response.text == "[]":
-            break
-
-        page_media_items = media_response.json()
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            results = list(
-                executor.map(
-                    partial(
-                        get_image, page_number=current_page, output_dir=args.output_dir
-                    ),
-                    page_media_items,
-                )
-            )
-
-        downloaded_files = [r for r in results if r is not None]
-
-        if args.compress:
-            compress_files(downloaded_files, f"page_{current_page}", args.compress)
-
-        page_elapsed_seconds = time.time() - page_start_time
-        print(f"Page {current_page} took {page_elapsed_seconds} seconds")
-
-        current_page += 1
+        sys.exit(1)
 
 
 if __name__ == "__main__":

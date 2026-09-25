@@ -13,17 +13,6 @@ dependencies = [
     "tenacity>=9.1.2",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.15.6",
-    "mypy",
-    "pre-commit",
-    "pytest",
-    "pytest-cov",
-    "pytest-dotenv",
-    "types-requests",
-]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -34,4 +23,75 @@ package = false
 [dependency-groups]
 dev = [
     "ruff>=0.15.6",
+    "mypy",
+    "pre-commit",
+    "briefcase>=0.4.5",
+    "pyinstaller>=6.22.3",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "pytest-dotenv",
+    "responses>=0.26.3",
+    "pytest-mock>=3.15.1",
+    "types-requests",
 ]
+
+# Briefcase configuration for ChildDiary Photo Export
+# Documentation: https://beeware.org/project/projects/tools/briefcase/en/latest/reference/configuration.html
+
+[tool.briefcase]
+project_name = "ChildDiary Export"
+bundle = "net.childdiary.export"
+version = "1.0.0"
+description = "Export media files from ChildDiary"
+authors = ["Samuel Pedro"]
+url = "https://github.com/SamuelNLP/child-diary-photo-export"
+license = "MIT"
+requires_python = ">=3.14"
+supported_platforms = ["macos", "windows", "linux"]
+sources = ["childdiary_export"]
+
+[tool.briefcase.app.childdiary_export]
+entry_point = "childdiary_export.gui:main"
+icon = "resources/icon"
+requires_network = true
+
+[tool.briefcase.app.childdiary_export.macos]
+bundle_identifier = "net.childdiary.export"
+application_category = "public.app-category.utilities"
+minimum_os_version = "10.15"
+
+[tool.briefcase.app.childdiary_export.windows]
+product_name = "ChildDiary Export"
+company_name = "ChildDiary Tools"
+file_version = "1.0.0.0"
+product_version = "1.0.0.0"
+file_description = "Export media files from ChildDiary"
+copyright = "Copyright (c) 2026 Samuel Pedro"
+requires_network = true
+
+[tool.briefcase.app.childdiary_export.linux]
+generic_name = "ChildDiary Export"
+
+[tool.briefcase.build.childdiary_export]
+requires = [
+    "keyring>=25.0.0",
+    "python-dotenv>=1.1.1",
+    "requests>=2.32.5",
+    "tenacity>=9.1.2",
+]
+includes = [".env.example", "README.md"]
+
+[tool.briefcase.distribute.childdiary_export]
+targets = ["dmg", "msi"]
+
+[tool.briefcase.distribute.childdiary_export.macos]
+dmg_background = "resources/dmg_background.png"
+dmg_window_size = "600,400"
+dmg_window_position = "400,200"
+dmg_icon_size = "128"
+dmg_icon_position = "250,200"
+dmg_apps_icon_position = "380,200"
+
+[tool.briefcase.distribute.childdiary_export.windows]
+installer_name = "ChildDiaryExport-{{version}}-windows-{{arch}}.msi"
+installer_upgrade_code = "{Unique-Upgrade-Code-GUID}"

@@ -1,4 +1,5 @@
 media/
+_site/
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm+all,jupyternotebooks,flask,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm+all,jupyternotebooks,flask,python
@@ -365,3 +366,14 @@ pyrightconfig.json
 
 .DS_Store
 /data/headers.json
+
+# Briefcase
+# Build and distribution artifacts
+briefcase/
+*.app
+*.dmg
+*.msi
+*.exe
+*.pkg
+# macOS app bundle contents
+*.app/Contents/

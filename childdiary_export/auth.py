@@ -33,7 +33,7 @@ def get_credentials() -> tuple[str, str]:
         credential = keyring.get_credential(service, None)
         if credential and credential.username and credential.password:
             return credential.username, credential.password
-    except Exception:
+    except keyring.errors.KeyringError:
         pass
 
     # Prompt user

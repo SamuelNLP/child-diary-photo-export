@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <div class="container">
+        <div class="logo">
+            {{ icon_svg | safe }}
+            <h1>ChildDiary Export</h1>
+        </div>
+        <nav>
+            <a href="{{ en_link }}" class="lang-link{% if lang == 'en' %} active{% endif %}">English</a>
+            <a href="{{ pt_link }}" class="lang-link{% if lang == 'pt' %} active{% endif %}">Português</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <p class="tagline">{{ translations.tagline }}</p>
+    </section>
+
+    <section class="description">
+        {{ translations.description }}
+    </section>
+
+    <section class="releases">
+        <h2>{{ translations.latest_releases }}</h2>
+        {% if releases %}
+            {% for release in releases %}
+            <div class="release-card">
+                <div class="release-header">
+                    <div class="release-version">v{{ release.tag_name }}</div>
+                    <div class="release-date">{{ release.published_at | date_format }}</div>
+                </div>
+                <div class="release-body">{{ release.body | first_line | truncate(200) }}</div>
+                <div class="downloads">
+                    {% for asset in release.assets %}
+                    <a href="{{ asset.browser_download_url }}"
+                       class="download-btn {{ asset.platform }}"
+                       download="{{ asset.name }}"
+                       rel="noreferrer">
+                        {{ asset.icon }} {{ asset.label }}
+                        <span>({{ asset.size_formatted }})</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-releases">{{ translations.no_releases }}</p>
+        {% endif %}
+    </section>
+
+    <section class="instructions">
+        <h2>{{ translations.how_to_use }}</h2>
+        <ol>
+            {% for item in translations.instructions %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    <section class="features">
+        <h2>{{ translations.features }}</h2>
+        <ul>
+            {% for item in translations.features_list %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+</main>
+
+<footer>
+    <div class="container">
+        <p><a href="https://github.com/SamuelNLP/child-diary-photo-export" rel="noreferrer">🐙 {{ translations.repo }}</a> | MIT License | <a href="{{ privacy_link }}">{{ translations.privacy_policy }}</a></p>
+    </div>
+</footer>
+{% endblock %}

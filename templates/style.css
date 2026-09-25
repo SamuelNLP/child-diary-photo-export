@@ -1,0 +1,276 @@
+/* Simple, elegant styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #C47F47;
+    --primary-dark: #8B3A2B;
+    --bg: #fafafa;
+    --text: #333;
+    --text-light: #666;
+    --border: #e0e0e0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+header {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--border);
+    background: white;
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+nav {
+    display: flex;
+    gap: 10px;
+}
+
+.lang-link {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.lang-link:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.lang-link.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.lang-sep {
+    color: var(--text-light);
+}
+
+/* Main Content */
+main {
+    padding: 40px 0;
+}
+
+.hero {
+    text-align: center;
+    padding: 20px 0 40px;
+}
+
+.tagline {
+    font-size: 1.25rem;
+    color: var(--text-light);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.description {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 60px;
+}
+
+/* Releases Section */
+h2 {
+    font-size: 1.5rem;
+    color: var(--text);
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+.releases-list {
+    display: grid;
+    gap: 20px;
+}
+
+.release-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.release-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.release-version {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.release-date {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    text-align: right;
+}
+
+.release-body {
+    color: var(--text-light);
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.downloads {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.download-btn:hover {
+    transform: translateY(-1px);
+}
+
+.download-btn.macos {
+    background: #f0f0f0;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.download-btn.macos:hover {
+    background: #e0e0e0;
+}
+
+.download-btn.windows {
+    background: #0078d4;
+    color: white;
+}
+
+.download-btn.windows:hover {
+    background: #0063b1;
+}
+
+.download-btn.linux {
+    background: #e95420;
+    color: white;
+}
+
+.download-btn.linux:hover {
+    background: #c94617;
+}
+
+.download-btn span {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.no-releases {
+    text-align: center;
+    color: var(--text-light);
+}
+
+/* Instructions */
+.instructions,
+.features {
+    margin: 40px 0;
+}
+
+.instructions ol,
+.features ul {
+    padding-left: 24px;
+    margin-bottom: 20px;
+}
+
+.instructions li,
+.features li {
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+/* Footer */
+footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    header .container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .logo {
+        margin-bottom: 16px;
+    }
+    
+    nav {
+        width: 100%;
+    }
+    
+    .lang-link {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .tagline {
+        font-size: 1.1rem;
+    }
+}

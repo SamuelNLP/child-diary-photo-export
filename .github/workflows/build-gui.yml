@@ -1,0 +1,155 @@
+name: Build GUI
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install briefcase
+
+      - name: Build macOS app
+        run: |
+          uv run briefcase create macos
+          uv run briefcase build macos
+          uv run briefcase package macos
+
+      - name: Rename output
+        run: |
+          mv dist/ChildDiary*.dmg dist/ChildDiaryExport-macos.dmg || true
+          ls -la dist/
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ChildDiaryExport-macos
+          path: dist/ChildDiaryExport-*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install briefcase
+
+      - name: Build Windows app
+        run: |
+          uv run briefcase create windows
+          uv run briefcase build windows
+          uv run briefcase package windows
+
+      - name: Rename output
+        run: |
+          mv dist/ChildDiary*.msi dist/ChildDiaryExport-windows.msi || true
+          ls -la dist/
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ChildDiaryExport-windows
+          path: dist/ChildDiaryExport-*.msi
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install briefcase
+
+      - name: Build Linux app
+        run: |
+          uv run briefcase create linux
+          uv run briefcase build linux
+          uv run briefcase package linux
+
+      - name: Package Linux artifacts
+        run: |
+          # Briefcase for Linux creates a directory; tar it up
+          if [ -d dist/ChildDiary* ]; then
+            tar -czf ChildDiaryExport-linux.tar.gz -C dist ChildDiary*
+            mv ChildDiaryExport-linux.tar.gz dist/
+          fi
+          ls -la dist/
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ChildDiaryExport-linux
+          path: dist/ChildDiaryExport-*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: find artifacts -type f -ls
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          files: |
+            artifacts/ChildDiaryExport-*.dmg
+            artifacts/ChildDiaryExport-*.msi
+            artifacts/ChildDiaryExport-*.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

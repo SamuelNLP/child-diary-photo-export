@@ -33,8 +33,8 @@ CHILD_DIARY_PASSWORD=your-password
 Alternatively, store credentials in your system keyring (more secure):
 
 ```bash
-# On first run, the script will prompt for credentials and save them to keyring
-uv run python script.py
+# On first run, the CLI will prompt for credentials and save them to keyring
+uv run python -m childdiary_export
 
 # Or manually set them:
 keyring set app.childdiary.net your@email.com
@@ -44,7 +44,7 @@ keyring set app.childdiary.net your@email.com
 4. Run the exporter:
 
 ```bash
-uv run python script.py
+uv run python -m childdiary_export
 ```
 
 Downloaded files will be written to `media/`.
